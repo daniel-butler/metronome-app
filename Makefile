@@ -29,19 +29,11 @@ test-unit:
 	@cd $(PROJECT_DIR) && xcodebuild test \
 		-scheme $(SCHEME) \
 		-destination $(DESTINATION) \
-		-only-testing:MetronomeAppTests \
-		| xcpretty || cd $(PROJECT_DIR) && xcodebuild test \
-		-scheme $(SCHEME) \
-		-destination $(DESTINATION) \
 		-only-testing:MetronomeAppTests
 
 test-ui:
 	@echo "Running UI tests on $(SIMULATOR)..."
 	@cd $(PROJECT_DIR) && xcodebuild test \
-		-scheme $(SCHEME) \
-		-destination $(DESTINATION) \
-		-only-testing:MetronomeAppUITests \
-		| xcpretty || cd $(PROJECT_DIR) && xcodebuild test \
 		-scheme $(SCHEME) \
 		-destination $(DESTINATION) \
 		-only-testing:MetronomeAppUITests
