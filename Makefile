@@ -48,6 +48,8 @@ test-ui:
 
 clean:
 	@echo "Cleaning build artifacts..."
-	@cd $(PROJECT_DIR) && xcodebuild clean -scheme $(SCHEME)
-	@rm -rf ~/Library/Developer/Xcode/DerivedData/MetronomeApp-*
+	@cd $(PROJECT_DIR) && xcodebuild clean -scheme $(SCHEME) || true
+	@rm -rf ~/Library/Developer/Xcode/DerivedData/MetronomeApp-* || true
 	@echo "Clean complete!"
+	@echo ""
+	@echo "Note: Run 'xcrun simctl erase all' to reset all simulators if tests fail"
