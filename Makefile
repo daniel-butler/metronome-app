@@ -29,14 +29,16 @@ test-unit:
 	@cd $(PROJECT_DIR) && xcodebuild test \
 		-scheme $(SCHEME) \
 		-destination $(DESTINATION) \
-		-only-testing:MetronomeAppTests
+		-only-testing:MetronomeAppTests \
+		-parallel-testing-enabled NO
 
 test-ui:
 	@echo "Running UI tests on $(SIMULATOR)..."
 	@cd $(PROJECT_DIR) && xcodebuild test \
 		-scheme $(SCHEME) \
 		-destination $(DESTINATION) \
-		-only-testing:MetronomeAppUITests
+		-only-testing:MetronomeAppUITests \
+		-parallel-testing-enabled NO
 
 clean:
 	@echo "Cleaning build artifacts..."
