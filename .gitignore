@@ -1,2 +1,4 @@
 .worktrees/
+.DS_Store
 .idea/
+xcuserdata/
