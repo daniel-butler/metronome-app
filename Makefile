@@ -4,7 +4,6 @@
 SIMULATOR ?= iPhone 17
 SCHEME = MetronomeApp
 DESTINATION = 'platform=iOS Simulator,name=$(SIMULATOR)'
-PROJECT_DIR = MetronomeApp
 
 help:
 	@echo "Metronome App - Make Commands"
@@ -26,7 +25,7 @@ test: test-unit test-ui
 
 test-unit:
 	@echo "Running unit tests on $(SIMULATOR)..."
-	@cd $(PROJECT_DIR) && xcodebuild test \
+	@xcodebuild test \
 		-scheme $(SCHEME) \
 		-destination $(DESTINATION) \
 		-only-testing:MetronomeAppTests \
@@ -34,7 +33,7 @@ test-unit:
 
 test-ui:
 	@echo "Running UI tests on $(SIMULATOR)..."
-	@cd $(PROJECT_DIR) && xcodebuild test \
+	@xcodebuild test \
 		-scheme $(SCHEME) \
 		-destination $(DESTINATION) \
 		-only-testing:MetronomeAppUITests \
@@ -42,7 +41,7 @@ test-ui:
 
 clean:
 	@echo "Cleaning build artifacts..."
-	@cd $(PROJECT_DIR) && xcodebuild clean -scheme $(SCHEME) || true
+	@xcodebuild clean -scheme $(SCHEME) || true
 	@rm -rf ~/Library/Developer/Xcode/DerivedData/MetronomeApp-* || true
 	@echo "Clean complete!"
 	@echo ""
