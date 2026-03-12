@@ -41,6 +41,9 @@ final class MetronomeEngine {
     private let sharedState = SharedMetronomeState.shared
     private var stateObserver: StateChangeObserver?
 
+    /// Called whenever bpm or isPlaying changes. PhoneSessionManager uses this to push state to the watch.
+    var onStateChange: (() -> Void)?
+
     // MARK: - Setup / Teardown
 
     func setup() {
@@ -79,6 +82,7 @@ final class MetronomeEngine {
         }
         sharedState.isPlaying = isPlaying
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: isPlaying)
+        onStateChange?()
         logger.info("togglePlayback — now isPlaying=\(self.isPlaying)")
     }
 
@@ -88,6 +92,7 @@ final class MetronomeEngine {
         sharedState.bpm = bpm
         handleBPMChange()
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: isPlaying)
+        onStateChange?()
     }
 
     func decrementBPM() {
@@ -96,6 +101,7 @@ final class MetronomeEngine {
         sharedState.bpm = bpm
         handleBPMChange()
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: isPlaying)
+        onStateChange?()
     }
 
     func setBPM(_ newBPM: Int) {
@@ -107,6 +113,7 @@ final class MetronomeEngine {
             handleBPMChange()
         }
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: isPlaying)
+        onStateChange?()
     }
 
     func setVolume(_ newVolume: Float) {

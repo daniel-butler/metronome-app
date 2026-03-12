@@ -12,7 +12,7 @@ private let logger = Logger(subsystem: "com.danielbutler.MetronomeApp", category
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @State var engine = MetronomeEngine()
+    var engine: MetronomeEngine
     @State private var showBPMAlert: Bool = false
     @State private var bpmText: String = ""
 
@@ -129,5 +129,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(engine: MetronomeEngine())
 }

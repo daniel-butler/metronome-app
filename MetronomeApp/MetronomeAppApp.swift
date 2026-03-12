@@ -34,15 +34,26 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct MetronomeAppApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @State private var engine = MetronomeEngine()
+    @State private var phoneSession: PhoneSessionManager?
 
     init() {
-        // Initialize audio session for background playback
         _ = AudioSessionManager.shared
     }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(engine: engine)
+                .onAppear {
+                    if phoneSession == nil {
+                        let session = PhoneSessionManager(engine: engine)
+                        engine.onStateChange = { [weak session] in
+                            session?.sendStateToWatch()
+                        }
+                        session.activate()
+                        phoneSession = session
+                    }
+                }
         }
     }
 }
