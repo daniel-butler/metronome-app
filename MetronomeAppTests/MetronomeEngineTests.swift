@@ -5,6 +5,7 @@
 //  Tests for MetronomeEngine state management, BPM persistence, and playback.
 //
 
+import Combine
 import XCTest
 @testable import MetronomeApp
 
@@ -90,30 +91,111 @@ final class MetronomeEngineTests: XCTestCase {
         XCTAssertFalse(engine.isPlaying)
     }
 
-    // MARK: - State Change Callback
+    // MARK: - State Change via Publisher
 
-    func testOnStateChangeCalledOnToggle() {
+    func testPublisherNotifiesOnToggle() {
         engine.setup()
         var callCount = 0
-        engine.onStateChange = { callCount += 1 }
+        let cancellable = engine.statePublisher.dropFirst().sink { _ in callCount += 1 }
 
         engine.togglePlayback()
         XCTAssertEqual(callCount, 1)
 
         engine.togglePlayback()
         XCTAssertEqual(callCount, 2)
+
+        cancellable.cancel()
     }
 
-    func testOnStateChangeCalledOnBPMChange() {
+    func testPublisherNotifiesOnBPMChange() {
         engine.setup()
+        engine.setBPM(180)
         var callCount = 0
-        engine.onStateChange = { callCount += 1 }
+        let cancellable = engine.statePublisher.dropFirst().sink { _ in callCount += 1 }
 
         engine.incrementBPM()
         XCTAssertEqual(callCount, 1)
 
         engine.decrementBPM()
         XCTAssertEqual(callCount, 2)
+
+        cancellable.cancel()
+    }
+
+    // MARK: - MetronomeState
+
+    func testMetronomeStateEquality() {
+        let state1 = MetronomeState(bpm: 180, isPlaying: false)
+        let state2 = MetronomeState(bpm: 180, isPlaying: false)
+        XCTAssertEqual(state1, state2)
+    }
+
+    func testMetronomeStateInequalityBPM() {
+        let state1 = MetronomeState(bpm: 180, isPlaying: false)
+        let state2 = MetronomeState(bpm: 200, isPlaying: false)
+        XCTAssertNotEqual(state1, state2)
+    }
+
+    func testMetronomeStateInequalityPlaying() {
+        let state1 = MetronomeState(bpm: 180, isPlaying: false)
+        let state2 = MetronomeState(bpm: 180, isPlaying: true)
+        XCTAssertNotEqual(state1, state2)
+    }
+
+    // MARK: - Publisher
+
+    func testPublisherEmitsOnToggle() {
+        engine.setup()
+        var states: [MetronomeState] = []
+        let cancellable = engine.statePublisher.dropFirst().sink { states.append($0) }
+
+        engine.togglePlayback()
+        XCTAssertEqual(states.count, 1)
+        XCTAssertEqual(states.last, MetronomeState(bpm: engine.bpm, isPlaying: true))
+
+        engine.togglePlayback()
+        XCTAssertEqual(states.count, 2)
+        XCTAssertEqual(states.last, MetronomeState(bpm: engine.bpm, isPlaying: false))
+
+        cancellable.cancel()
+    }
+
+    func testPublisherEmitsOnBPMChange() {
+        engine.setup()
+        engine.setBPM(180)
+        var states: [MetronomeState] = []
+        let cancellable = engine.statePublisher.dropFirst().sink { states.append($0) }
+
+        engine.incrementBPM()
+        XCTAssertEqual(states.count, 1)
+        XCTAssertEqual(states.last?.bpm, 181)
+
+        cancellable.cancel()
+    }
+
+    func testPublisherEmitsOnSetBPM() {
+        engine.setup()
+        var states: [MetronomeState] = []
+        let cancellable = engine.statePublisher.dropFirst().sink { states.append($0) }
+
+        engine.setBPM(200)
+        XCTAssertEqual(states.count, 1)
+        XCTAssertEqual(states.last, MetronomeState(bpm: 200, isPlaying: false))
+
+        cancellable.cancel()
+    }
+
+    func testPublisherCurrentValueAccessibleByLateSubscriber() {
+        engine.setup()
+        engine.setBPM(215)
+
+        // Subscribe after state change — should get current value immediately
+        var latestState: MetronomeState?
+        let cancellable = engine.statePublisher.sink { latestState = $0 }
+
+        XCTAssertEqual(latestState, MetronomeState(bpm: 215, isPlaying: false))
+
+        cancellable.cancel()
     }
 
     // MARK: - ensureReady

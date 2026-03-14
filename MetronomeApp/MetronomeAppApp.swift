@@ -47,9 +47,6 @@ struct MetronomeAppApp: App {
                 .onAppear {
                     if phoneSession == nil {
                         let session = PhoneSessionManager(engine: engine)
-                        engine.onStateChange = { [weak session] in
-                            session?.sendStateToWatch()
-                        }
                         session.activate()
                         phoneSession = session
                     }
