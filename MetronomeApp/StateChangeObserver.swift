@@ -14,6 +14,7 @@ class StateChangeObserver {
     private var onStateChanged: (() -> Void)?
     private var onPlayCommand: (() -> Void)?
     private var onStopCommand: (() -> Void)?
+    private var isObserving = false
 
     func startObserving(
         onStateChanged: @escaping () -> Void,
@@ -23,6 +24,7 @@ class StateChangeObserver {
         self.onStateChanged = onStateChanged
         self.onPlayCommand = onPlayCommand
         self.onStopCommand = onStopCommand
+        isObserving = true
 
         let observer = Unmanaged.passUnretained(self).toOpaque()
         let center = CFNotificationCenterGetDarwinNotifyCenter()
@@ -70,6 +72,8 @@ class StateChangeObserver {
     }
 
     func stopObserving() {
+        guard isObserving else { return }
+        isObserving = false
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         let observer = Unmanaged.passUnretained(self).toOpaque()
         CFNotificationCenterRemoveObserver(center, observer, nil, nil)

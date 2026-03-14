@@ -46,8 +46,12 @@ final class MetronomeEngine {
 
     // MARK: - Cross-Process
 
-    private let sharedState = SharedMetronomeState.shared
+    @ObservationIgnored private let store: StateStore
     private var stateObserver: StateChangeObserver?
+
+    init(store: StateStore = SharedStateStore.shared) {
+        self.store = store
+    }
 
     // MARK: - Combine Publisher
 
@@ -87,16 +91,16 @@ final class MetronomeEngine {
         logger.info("setup — initializing audio engine and state observer")
 
         // Restore BPM from shared state (survives app restarts)
-        sharedState.synchronize()
-        let restoredBPM = sharedState.bpm
+        store.synchronize()
+        let restoredBPM = store.bpm
         bpm = min(Self.bpmRange.upperBound, max(Self.bpmRange.lowerBound, restoredBPM))
         volume = 0.4
         isPlaying = false
 
         // Sync shared preferences (keep bpm, reset playback)
-        sharedState.bpm = bpm
-        sharedState.volume = 0.4
-        sharedState.isPlaying = false
+        store.bpm = bpm
+        store.volume = 0.4
+        store.isPlaying = false
 
         setupAudioEngine()
         setupRemoteCommands()
@@ -130,6 +134,13 @@ final class MetronomeEngine {
         isSetUp = false
     }
 
+    nonisolated deinit {
+        // nonisolated deinit prevents Swift from scheduling deallocation on the
+        // main actor via swift_task_deinitOnExecutorImpl, which avoids a
+        // TaskLocal.StopLookupScope crash in unit tests. Properties are already
+        // cleaned up by teardown(); the deinit body is intentionally empty.
+    }
+
     // MARK: - Public Controls
 
     func togglePlayback() {
@@ -141,7 +152,7 @@ final class MetronomeEngine {
             isPlaying = true
             startMetronome()
         }
-        sharedState.isPlaying = isPlaying
+        store.isPlaying = isPlaying
         notifyStateChanged()
         logger.info("togglePlayback — now isPlaying=\(self.isPlaying)")
     }
@@ -149,7 +160,7 @@ final class MetronomeEngine {
     func incrementBPM() {
         guard canIncrementBPM else { return }
         bpm += 1
-        sharedState.bpm = bpm
+        store.bpm = bpm
         handleBPMChange()
         notifyStateChanged()
     }
@@ -157,7 +168,7 @@ final class MetronomeEngine {
     func decrementBPM() {
         guard canDecrementBPM else { return }
         bpm -= 1
-        sharedState.bpm = bpm
+        store.bpm = bpm
         handleBPMChange()
         notifyStateChanged()
     }
@@ -166,7 +177,7 @@ final class MetronomeEngine {
         let clamped = min(Self.bpmRange.upperBound, max(Self.bpmRange.lowerBound, newBPM))
         guard clamped != bpm else { return }
         bpm = clamped
-        sharedState.bpm = clamped
+        store.bpm = clamped
         if isPlaying {
             handleBPMChange()
         }
@@ -177,13 +188,13 @@ final class MetronomeEngine {
         let clamped = max(0.0, min(1.0, newVolume))
         volume = clamped
         audioEngine?.mainMixerNode.outputVolume = clamped
-        sharedState.volume = clamped
-        sharedState.notifyWidgetUpdate()
+        store.volume = clamped
+        store.notifyWidgetUpdate()
     }
 
     func syncFromSharedState() {
-        sharedState.synchronize()
-        let newBPM = sharedState.bpm
+        store.synchronize()
+        let newBPM = store.bpm
         logger.info("syncFromSharedState — shared bpm=\(newBPM), local bpm=\(self.bpm)")
 
         if newBPM != bpm {
@@ -336,8 +347,8 @@ final class MetronomeEngine {
 
     @MainActor
     private func handleSharedStateChange() {
-        sharedState.synchronize()
-        let newBPM = sharedState.bpm
+        store.synchronize()
+        let newBPM = store.bpm
         logger.info("handleSharedStateChange — shared bpm=\(newBPM), local bpm=\(self.bpm)")
 
         if newBPM != bpm {
@@ -355,7 +366,7 @@ final class MetronomeEngine {
         logger.info("handlePlayCommand — currently isPlaying=\(self.isPlaying)")
         guard !isPlaying else { return }
         isPlaying = true
-        sharedState.isPlaying = true
+        store.isPlaying = true
         startMetronome()
         notifyStateChanged()
     }
@@ -365,7 +376,7 @@ final class MetronomeEngine {
         logger.info("handleStopCommand — currently isPlaying=\(self.isPlaying)")
         guard isPlaying else { return }
         isPlaying = false
-        sharedState.isPlaying = false
+        store.isPlaying = false
         stopMetronome()
         notifyStateChanged()
     }
@@ -398,7 +409,7 @@ final class MetronomeEngine {
             self.wasPlayingBeforeInterruption = self.isPlaying
             guard self.isPlaying else { return }
             self.isPlaying = false
-            self.sharedState.isPlaying = false
+            self.store.isPlaying = false
             self.stopMetronome()
             self.notifyStateChanged()
         }
@@ -411,7 +422,7 @@ final class MetronomeEngine {
             self.wasPlayingBeforeInterruption = false
             AudioSessionManager.shared.activate()
             self.isPlaying = true
-            self.sharedState.isPlaying = true
+            self.store.isPlaying = true
             self.startMetronome()
             self.notifyStateChanged()
         }

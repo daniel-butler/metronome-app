@@ -238,4 +238,15 @@ final class MetronomeEngineTests: XCTestCase {
         XCTAssertTrue(store.isPlaying)
         XCTAssertEqual(store.volume, 0.8)
     }
+
+    // MARK: - StateStore Injection
+
+    func testEngineUsesInjectedStore() {
+        let store = InMemoryStateStore()
+        store.bpm = 200
+        let injectedEngine = MetronomeEngine(store: store)
+        injectedEngine.setup()
+        XCTAssertEqual(injectedEngine.bpm, 200)
+        injectedEngine.teardown()
+    }
 }
