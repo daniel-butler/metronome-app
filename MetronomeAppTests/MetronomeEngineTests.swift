@@ -157,12 +157,13 @@ final class MetronomeEngineTests: XCTestCase {
 
     func testPublisherEmitsOnBPMChange() {
         engine.setup()
+        engine.setBPM(180)
         var states: [MetronomeState] = []
         let cancellable = engine.statePublisher.dropFirst().sink { states.append($0) }
 
         engine.incrementBPM()
         XCTAssertEqual(states.count, 1)
-        XCTAssertEqual(states.last?.bpm, engine.bpm)
+        XCTAssertEqual(states.last?.bpm, 181)
 
         cancellable.cancel()
     }

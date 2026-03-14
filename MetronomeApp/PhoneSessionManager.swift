@@ -7,6 +7,7 @@
 //  Sends state updates to the watch when engine state changes.
 //
 
+import Combine
 import WatchConnectivity
 import os
 
@@ -16,11 +17,15 @@ private let logger = Logger(subsystem: "com.danielbutler.MetronomeApp", category
 final class PhoneSessionManager: NSObject {
     private let engine: MetronomeEngine
     private let launchTimestamp: TimeInterval
+    private var cancellable: AnyCancellable?
 
     init(engine: MetronomeEngine) {
         self.engine = engine
         self.launchTimestamp = Date().timeIntervalSince1970
         super.init()
+        cancellable = engine.statePublisher.dropFirst().sink { [weak self] _ in
+            self?.sendStateToWatch()
+        }
     }
 
     func activate() {
