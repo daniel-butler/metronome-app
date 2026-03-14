@@ -7,6 +7,7 @@
 //
 
 import AVFoundation
+import Combine
 import MediaPlayer
 import os
 
@@ -51,6 +52,19 @@ final class MetronomeEngine {
     /// Called whenever bpm or isPlaying changes. PhoneSessionManager uses this to push state to the watch.
     var onStateChange: (() -> Void)?
 
+    // MARK: - Combine Publisher
+
+    private let stateSubject = CurrentValueSubject<MetronomeState, Never>(MetronomeState(bpm: 180, isPlaying: false))
+
+    /// Publishes MetronomeState whenever bpm or isPlaying changes. Late subscribers receive the current value immediately.
+    var statePublisher: AnyPublisher<MetronomeState, Never> {
+        stateSubject.eraseToAnyPublisher()
+    }
+
+    private func notifyStateChanged() {
+        stateSubject.send(MetronomeState(bpm: bpm, isPlaying: isPlaying))
+    }
+
     // MARK: - Setup / Teardown
 
     private var isSetUp: Bool = false
@@ -74,6 +88,7 @@ final class MetronomeEngine {
         setupRemoteCommands()
         startObservingSharedState()
         startObservingInterruptions()
+        notifyStateChanged()
         updateNowPlaying()
         isSetUp = true
     }
@@ -114,6 +129,7 @@ final class MetronomeEngine {
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: isPlaying)
         updateNowPlaying()
         onStateChange?()
+        notifyStateChanged()
         logger.info("togglePlayback — now isPlaying=\(self.isPlaying)")
     }
 
@@ -125,6 +141,7 @@ final class MetronomeEngine {
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: isPlaying)
         updateNowPlaying()
         onStateChange?()
+        notifyStateChanged()
     }
 
     func decrementBPM() {
@@ -135,6 +152,7 @@ final class MetronomeEngine {
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: isPlaying)
         updateNowPlaying()
         onStateChange?()
+        notifyStateChanged()
     }
 
     func setBPM(_ newBPM: Int) {
@@ -148,6 +166,7 @@ final class MetronomeEngine {
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: isPlaying)
         updateNowPlaying()
         onStateChange?()
+        notifyStateChanged()
     }
 
     func setVolume(_ newVolume: Float) {
@@ -324,6 +343,7 @@ final class MetronomeEngine {
             }
             LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: isPlaying)
             updateNowPlaying()
+            notifyStateChanged()
         }
     }
 
@@ -336,6 +356,7 @@ final class MetronomeEngine {
         startMetronome()
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: true)
         updateNowPlaying()
+        notifyStateChanged()
     }
 
     @MainActor
@@ -347,6 +368,7 @@ final class MetronomeEngine {
         stopMetronome()
         LiveActivityManager.shared.updateActivity(bpm: bpm, isPlaying: false)
         updateNowPlaying()
+        notifyStateChanged()
     }
 
     // MARK: - Audio Interruption Handling
@@ -382,6 +404,7 @@ final class MetronomeEngine {
             LiveActivityManager.shared.updateActivity(bpm: self.bpm, isPlaying: false)
             self.updateNowPlaying()
             self.onStateChange?()
+            self.notifyStateChanged()
         }
     }
 
@@ -396,6 +419,7 @@ final class MetronomeEngine {
             self.startMetronome()
             LiveActivityManager.shared.updateActivity(bpm: self.bpm, isPlaying: true)
             self.onStateChange?()
+            self.notifyStateChanged()
             self.updateNowPlaying()
         }
     }
