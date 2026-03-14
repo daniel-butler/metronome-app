@@ -115,6 +115,7 @@ final class MetronomeEngine {
     func ensureReady() {
         guard !isSetUp else { return }
         logger.info("ensureReady — background setup (preserving state)")
+        store.synchronize()
         setupAudioEngine()
         setupRemoteCommands()
         startObservingInterruptions()
@@ -191,20 +192,6 @@ final class MetronomeEngine {
         store.notifyWidgetUpdate()
     }
 
-    func syncFromSharedState() {
-        store.synchronize()
-        let newBPM = store.bpm
-        logger.info("syncFromSharedState — shared bpm=\(newBPM), local bpm=\(self.bpm)")
-
-        if newBPM != bpm {
-            logger.info("BPM mismatch — syncing \(self.bpm) → \(newBPM)")
-            bpm = newBPM
-            if isPlaying {
-                handleBPMChange()
-            }
-            notifyStateChanged()
-        }
-    }
 
     // MARK: - Audio Engine Setup
 

@@ -118,12 +118,6 @@ struct ContentView: View {
             logger.info("onDisappear — tearing down engine")
             engine.teardown()
         }
-        .onChange(of: scenePhase) { _, newPhase in
-            logger.info("scenePhase changed to \(String(describing: newPhase))")
-            if newPhase == .active {
-                engine.syncFromSharedState()
-            }
-        }
     }
 
     private func commitBPM() {
