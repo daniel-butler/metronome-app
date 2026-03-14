@@ -39,14 +39,24 @@ final class WatchSessionManager: NSObject {
     // MARK: - Commands to Phone
 
     func toggle() {
+        // Optimistic local update — don't wait for phone reply
+        isPlaying.toggle()
         sendCommand("toggle")
     }
 
     func incrementBPM() {
+        // Optimistic local update
+        if bpm < 230 {
+            bpm += 1
+        }
         sendCommand("incrementBPM")
     }
 
     func decrementBPM() {
+        // Optimistic local update
+        if bpm > 150 {
+            bpm -= 1
+        }
         sendCommand("decrementBPM")
     }
 
@@ -56,7 +66,10 @@ final class WatchSessionManager: NSObject {
             return
         }
 
-        let payload: [String: Any] = ["command": command]
+        let payload: [String: Any] = [
+            "command": command,
+            "timestamp": Date().timeIntervalSince1970
+        ]
 
         if session.isReachable {
             // Immediate delivery — phone is active
@@ -64,10 +77,10 @@ final class WatchSessionManager: NSObject {
                 Task { @MainActor [weak self] in
                     self?.applyState(reply)
                 }
-            }, errorHandler: { [weak session] error in
+            }, errorHandler: { error in
                 logger.error("sendMessage failed for \(command): \(error.localizedDescription)")
                 // Fall back to transferUserInfo for queued delivery
-                session?.transferUserInfo(payload)
+                session.transferUserInfo(payload)
             })
             logger.info("Sent command to phone via message: \(command)")
         } else {

@@ -27,7 +27,7 @@ final class NowPlayingTests: XCTestCase {
     func testNowPlayingSetOnSetup() {
         let info = MPNowPlayingInfoCenter.default().nowPlayingInfo
         XCTAssertNotNil(info, "Now Playing info should be set after setup")
-        XCTAssertEqual(info?[MPMediaItemPropertyTitle] as? String, "180 SPM")
+        XCTAssertEqual(info?[MPMediaItemPropertyTitle] as? String, "\(engine.bpm) SPM")
         XCTAssertEqual(info?[MPMediaItemPropertyArtist] as? String, "Stopped")
     }
 
@@ -35,7 +35,7 @@ final class NowPlayingTests: XCTestCase {
         engine.togglePlayback()
 
         let info = MPNowPlayingInfoCenter.default().nowPlayingInfo
-        XCTAssertEqual(info?[MPMediaItemPropertyTitle] as? String, "180 SPM")
+        XCTAssertEqual(info?[MPMediaItemPropertyTitle] as? String, "\(engine.bpm) SPM")
         XCTAssertEqual(info?[MPMediaItemPropertyArtist] as? String, "Playing")
         XCTAssertEqual(info?[MPNowPlayingInfoPropertyPlaybackRate] as? Double, 1.0)
 
@@ -47,16 +47,17 @@ final class NowPlayingTests: XCTestCase {
     }
 
     func testNowPlayingUpdatesOnBPMChange() {
+        let baseBPM = engine.bpm
         engine.incrementBPM()
 
         let info = MPNowPlayingInfoCenter.default().nowPlayingInfo
-        XCTAssertEqual(info?[MPMediaItemPropertyTitle] as? String, "181 SPM")
+        XCTAssertEqual(info?[MPMediaItemPropertyTitle] as? String, "\(baseBPM + 1) SPM")
 
         engine.decrementBPM()
         engine.decrementBPM()
 
         let info2 = MPNowPlayingInfoCenter.default().nowPlayingInfo
-        XCTAssertEqual(info2?[MPMediaItemPropertyTitle] as? String, "179 SPM")
+        XCTAssertEqual(info2?[MPMediaItemPropertyTitle] as? String, "\(baseBPM - 1) SPM")
     }
 
     func testNowPlayingUpdatesOnSetBPM() {

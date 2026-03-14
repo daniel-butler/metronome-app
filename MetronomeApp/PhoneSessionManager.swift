@@ -15,9 +15,11 @@ private let logger = Logger(subsystem: "com.danielbutler.MetronomeApp", category
 @MainActor
 final class PhoneSessionManager: NSObject {
     private let engine: MetronomeEngine
+    private let launchTimestamp: TimeInterval
 
     init(engine: MetronomeEngine) {
         self.engine = engine
+        self.launchTimestamp = Date().timeIntervalSince1970
         super.init()
     }
 
@@ -99,10 +101,22 @@ extension PhoneSessionManager: WCSessionDelegate {
         }
     }
 
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
+        Task { @MainActor in
+            self.handleWatchCommand(userInfo, isQueued: true)
+        }
+    }
+
     @MainActor
-    private func handleWatchCommand(_ message: [String: Any]) {
+    private func handleWatchCommand(_ message: [String: Any], isQueued: Bool = false) {
         guard let command = message["command"] as? String else {
             logger.warning("Received message without command: \(message)")
+            return
+        }
+
+        // Discard commands that were queued (via transferUserInfo) before this launch
+        if isQueued, let timestamp = message["timestamp"] as? TimeInterval, timestamp < launchTimestamp {
+            logger.info("Discarding stale queued command: \(command) (sent \(self.launchTimestamp - timestamp)s before launch)")
             return
         }
 

@@ -53,13 +53,15 @@ final class MetronomeEngine {
     func setup() {
         logger.info("setup — initializing audio engine and state observer")
 
-        // Always start fresh
-        bpm = 180
+        // Restore BPM from shared state (survives app restarts)
+        sharedState.synchronize()
+        let restoredBPM = sharedState.bpm
+        bpm = min(Self.bpmRange.upperBound, max(Self.bpmRange.lowerBound, restoredBPM))
         volume = 0.4
         isPlaying = false
 
-        // Reset shared preferences
-        sharedState.bpm = 180
+        // Sync shared preferences (keep bpm, reset playback)
+        sharedState.bpm = bpm
         sharedState.volume = 0.4
         sharedState.isPlaying = false
 
