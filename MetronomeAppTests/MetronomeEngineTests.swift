@@ -33,7 +33,7 @@ final class MetronomeEngineTests: XCTestCase {
 
         let engine2 = MetronomeEngine()
         engine2.setup()
-        XCTAssertEqual(engine2.bpm, 210, "setup() should restore BPM from SharedMetronomeState, not reset to 180")
+        XCTAssertEqual(engine2.bpm, 210, "setup() should restore BPM from SharedPlaybackState, not reset to 180")
         engine2.teardown()
     }
 
@@ -122,23 +122,23 @@ final class MetronomeEngineTests: XCTestCase {
         cancellable.cancel()
     }
 
-    // MARK: - MetronomeState
+    // MARK: - PlaybackState
 
-    func testMetronomeStateEquality() {
-        let state1 = MetronomeState(bpm: 180, isPlaying: false)
-        let state2 = MetronomeState(bpm: 180, isPlaying: false)
+    func testPlaybackStateEquality() {
+        let state1 = PlaybackState(bpm: 180, isPlaying: false)
+        let state2 = PlaybackState(bpm: 180, isPlaying: false)
         XCTAssertEqual(state1, state2)
     }
 
-    func testMetronomeStateInequalityBPM() {
-        let state1 = MetronomeState(bpm: 180, isPlaying: false)
-        let state2 = MetronomeState(bpm: 200, isPlaying: false)
+    func testPlaybackStateInequalityBPM() {
+        let state1 = PlaybackState(bpm: 180, isPlaying: false)
+        let state2 = PlaybackState(bpm: 200, isPlaying: false)
         XCTAssertNotEqual(state1, state2)
     }
 
-    func testMetronomeStateInequalityPlaying() {
-        let state1 = MetronomeState(bpm: 180, isPlaying: false)
-        let state2 = MetronomeState(bpm: 180, isPlaying: true)
+    func testPlaybackStateInequalityPlaying() {
+        let state1 = PlaybackState(bpm: 180, isPlaying: false)
+        let state2 = PlaybackState(bpm: 180, isPlaying: true)
         XCTAssertNotEqual(state1, state2)
     }
 
@@ -146,16 +146,16 @@ final class MetronomeEngineTests: XCTestCase {
 
     func testPublisherEmitsOnToggle() {
         engine.setup()
-        var states: [MetronomeState] = []
+        var states: [PlaybackState] = []
         let cancellable = engine.statePublisher.dropFirst().sink { states.append($0) }
 
         engine.togglePlayback()
         XCTAssertEqual(states.count, 1)
-        XCTAssertEqual(states.last, MetronomeState(bpm: engine.bpm, isPlaying: true))
+        XCTAssertEqual(states.last, PlaybackState(bpm: engine.bpm, isPlaying: true))
 
         engine.togglePlayback()
         XCTAssertEqual(states.count, 2)
-        XCTAssertEqual(states.last, MetronomeState(bpm: engine.bpm, isPlaying: false))
+        XCTAssertEqual(states.last, PlaybackState(bpm: engine.bpm, isPlaying: false))
 
         cancellable.cancel()
     }
@@ -163,7 +163,7 @@ final class MetronomeEngineTests: XCTestCase {
     func testPublisherEmitsOnBPMChange() {
         engine.setup()
         engine.setBPM(180)
-        var states: [MetronomeState] = []
+        var states: [PlaybackState] = []
         let cancellable = engine.statePublisher.dropFirst().sink { states.append($0) }
 
         engine.incrementBPM()
@@ -175,12 +175,12 @@ final class MetronomeEngineTests: XCTestCase {
 
     func testPublisherEmitsOnSetBPM() {
         engine.setup()
-        var states: [MetronomeState] = []
+        var states: [PlaybackState] = []
         let cancellable = engine.statePublisher.dropFirst().sink { states.append($0) }
 
         engine.setBPM(200)
         XCTAssertEqual(states.count, 1)
-        XCTAssertEqual(states.last, MetronomeState(bpm: 200, isPlaying: false))
+        XCTAssertEqual(states.last, PlaybackState(bpm: 200, isPlaying: false))
 
         cancellable.cancel()
     }
@@ -190,10 +190,10 @@ final class MetronomeEngineTests: XCTestCase {
         engine.setBPM(215)
 
         // Subscribe after state change — should get current value immediately
-        var latestState: MetronomeState?
+        var latestState: PlaybackState?
         let cancellable = engine.statePublisher.sink { latestState = $0 }
 
-        XCTAssertEqual(latestState, MetronomeState(bpm: 215, isPlaying: false))
+        XCTAssertEqual(latestState, PlaybackState(bpm: 215, isPlaying: false))
 
         cancellable.cancel()
     }

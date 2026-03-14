@@ -13,7 +13,7 @@ import os
 
 private let logger = Logger(subsystem: "com.danielbutler.MetronomeApp", category: "MetronomeEngine")
 
-struct MetronomeState: Equatable {
+struct PlaybackState: Equatable {
     let bpm: Int
     let isPlaying: Bool
 }
@@ -51,17 +51,17 @@ final class MetronomeEngine {
 
     // MARK: - Combine Publisher
 
-    private let stateSubject = CurrentValueSubject<MetronomeState, Never>(MetronomeState(bpm: 180, isPlaying: false))
+    private let stateSubject = CurrentValueSubject<PlaybackState, Never>(PlaybackState(bpm: 180, isPlaying: false))
 
-    /// Publishes MetronomeState whenever bpm or isPlaying changes. Late subscribers receive the current value immediately.
-    var statePublisher: AnyPublisher<MetronomeState, Never> {
+    /// Publishes PlaybackState whenever bpm or isPlaying changes. Late subscribers receive the current value immediately.
+    var statePublisher: AnyPublisher<PlaybackState, Never> {
         stateSubject.eraseToAnyPublisher()
     }
 
     private var subscriptions = Set<AnyCancellable>()
 
     private func notifyStateChanged() {
-        stateSubject.send(MetronomeState(bpm: bpm, isPlaying: isPlaying))
+        stateSubject.send(PlaybackState(bpm: bpm, isPlaying: isPlaying))
     }
 
     private func setupSubscriptions() {
