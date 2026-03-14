@@ -116,6 +116,26 @@ final class MetronomeEngineTests: XCTestCase {
         XCTAssertEqual(callCount, 2)
     }
 
+    // MARK: - MetronomeState
+
+    func testMetronomeStateEquality() {
+        let state1 = MetronomeState(bpm: 180, isPlaying: false)
+        let state2 = MetronomeState(bpm: 180, isPlaying: false)
+        XCTAssertEqual(state1, state2)
+    }
+
+    func testMetronomeStateInequalityBPM() {
+        let state1 = MetronomeState(bpm: 180, isPlaying: false)
+        let state2 = MetronomeState(bpm: 200, isPlaying: false)
+        XCTAssertNotEqual(state1, state2)
+    }
+
+    func testMetronomeStateInequalityPlaying() {
+        let state1 = MetronomeState(bpm: 180, isPlaying: false)
+        let state2 = MetronomeState(bpm: 180, isPlaying: true)
+        XCTAssertNotEqual(state1, state2)
+    }
+
     // MARK: - ensureReady
 
     func testEnsureReadyIsIdempotent() {

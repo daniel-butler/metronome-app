@@ -12,6 +12,11 @@ import os
 
 private let logger = Logger(subsystem: "com.danielbutler.MetronomeApp", category: "MetronomeEngine")
 
+struct MetronomeState: Equatable {
+    let bpm: Int
+    let isPlaying: Bool
+}
+
 @Observable
 @MainActor
 final class MetronomeEngine {
