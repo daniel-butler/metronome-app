@@ -116,7 +116,6 @@
 			membershipExceptions = (
 				ActivityUpdateTracker.swift,
 				MetronomeActivityAttributes.swift,
-				MetronomeApp/SharedMetronomeState.swift,
 				MetronomeAppIntents.swift,
 				SharedStateStore.swift,
 				StateStore.swift,
