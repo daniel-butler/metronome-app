@@ -91,31 +91,35 @@ final class MetronomeEngineTests: XCTestCase {
         XCTAssertFalse(engine.isPlaying)
     }
 
-    // MARK: - State Change Callback
+    // MARK: - State Change via Publisher
 
-    func testOnStateChangeCalledOnToggle() {
+    func testPublisherNotifiesOnToggle() {
         engine.setup()
         var callCount = 0
-        engine.onStateChange = { callCount += 1 }
+        let cancellable = engine.statePublisher.dropFirst().sink { _ in callCount += 1 }
 
         engine.togglePlayback()
         XCTAssertEqual(callCount, 1)
 
         engine.togglePlayback()
         XCTAssertEqual(callCount, 2)
+
+        cancellable.cancel()
     }
 
-    func testOnStateChangeCalledOnBPMChange() {
+    func testPublisherNotifiesOnBPMChange() {
         engine.setup()
         engine.setBPM(180)
         var callCount = 0
-        engine.onStateChange = { callCount += 1 }
+        let cancellable = engine.statePublisher.dropFirst().sink { _ in callCount += 1 }
 
         engine.incrementBPM()
         XCTAssertEqual(callCount, 1)
 
         engine.decrementBPM()
         XCTAssertEqual(callCount, 2)
+
+        cancellable.cancel()
     }
 
     // MARK: - MetronomeState
