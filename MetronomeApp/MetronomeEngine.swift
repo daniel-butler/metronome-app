@@ -236,6 +236,17 @@ final class MetronomeEngine {
 
         guard let playerNode, let audioBuffer, let audioEngine else { return }
 
+        // Restart audio engine if it was stopped (e.g. after interruption)
+        if !audioEngine.isRunning {
+            logger.info("Audio engine not running — restarting")
+            do {
+                try audioEngine.start()
+            } catch {
+                logger.error("Failed to restart audio engine: \(error.localizedDescription)")
+                return
+            }
+        }
+
         audioEngine.mainMixerNode.outputVolume = volume
 
         let interval = calculateInterval(bpm: bpm)

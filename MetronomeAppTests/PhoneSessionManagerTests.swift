@@ -48,15 +48,15 @@ final class PhoneSessionManagerTests: XCTestCase {
     }
 
     func testIncrementBPMCommand() {
-        let initial = engine.bpm
+        engine.setBPM(190)
         engine.incrementBPM()
-        XCTAssertEqual(engine.bpm, initial + 1)
+        XCTAssertEqual(engine.bpm, 191)
     }
 
     func testDecrementBPMCommand() {
-        let initial = engine.bpm
+        engine.setBPM(190)
         engine.decrementBPM()
-        XCTAssertEqual(engine.bpm, initial - 1)
+        XCTAssertEqual(engine.bpm, 189)
     }
 
     // MARK: - Stale Command Filtering (Bug 4 fix)
@@ -89,11 +89,11 @@ final class PhoneSessionManagerTests: XCTestCase {
     }
 
     func testRapidBPMCommandsAccumulate() {
-        let initial = engine.bpm
+        engine.setBPM(190)
         for _ in 0..<5 {
             engine.incrementBPM()
         }
-        XCTAssertEqual(engine.bpm, initial + 5)
+        XCTAssertEqual(engine.bpm, 195)
     }
 
     func testBPMPreservedAfterToggle() {
