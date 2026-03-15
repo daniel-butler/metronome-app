@@ -23,9 +23,14 @@ final class LiveActivityManager {
 
     private(set) var tracker: ActivityUpdateTracker
     private(set) var lastSentState: OneEightyActivityAttributes.ContentState?
+    private(set) var lastPushedState: OneEightyActivityAttributes.ContentState?
 
     private init() {
         tracker = ActivityUpdateTracker()
+        // Wire the intent debouncer to route through this manager
+        IntentActivityDebouncer.shared.setUpdateHandler { [weak self] bpm, isPlaying in
+            self?.updateActivity(bpm: bpm, isPlaying: isPlaying)
+        }
     }
 
     func resetForTesting() {
@@ -43,6 +48,7 @@ final class LiveActivityManager {
         throttleTimer = nil
         lastIsPlaying = false
         lastSentState = nil
+        lastPushedState = nil
         tracker.reset()
     }
 
@@ -76,6 +82,7 @@ final class LiveActivityManager {
                 content: .init(state: contentState, staleDate: nil)
             )
             lastIsPlaying = isPlaying
+            lastPushedState = contentState
             logger.info("Live Activity started successfully, id=\(self.currentActivity?.id ?? "nil")")
             if let activity = currentActivity {
                 observeActivityUpdates(activity)
@@ -123,7 +130,7 @@ final class LiveActivityManager {
 
             // Start cooldown — pending updates flush when timer fires
             throttleTimer = Timer.scheduledTimer(
-                withTimeInterval: tracker.minimumInterval,
+                withTimeInterval: tracker.effectiveInterval(),
                 repeats: false
             ) { _ in
                 Task { @MainActor [weak self] in
@@ -145,6 +152,13 @@ final class LiveActivityManager {
             bpm: bpm,
             isPlaying: isPlaying
         )
+
+        // Dedup: skip if identical to last pushed state
+        if let lastPushed = lastPushedState, lastPushed == contentState {
+            logger.info("Dedup — skipping identical push bpm=\(bpm), isPlaying=\(isPlaying)")
+            return
+        }
+        lastPushedState = contentState
 
         tracker.recordUpdate()
         tracker.markUpdateSent()

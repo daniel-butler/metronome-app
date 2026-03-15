@@ -68,6 +68,17 @@ final class ActivityUpdateTracker {
         return date.timeIntervalSince(sentTime) > timeout
     }
 
+    func effectiveInterval(at date: Date = Date()) -> TimeInterval {
+        let hourlyCount = updatesInLastHour(relativeTo: date)
+        let ratio = Double(hourlyCount) / Double(budgetWarningThreshold)
+        if ratio >= 1.0 {
+            return minimumInterval * 4
+        } else if ratio >= 0.75 {
+            return minimumInterval * 2
+        }
+        return minimumInterval
+    }
+
     func reset() {
         updateTimestamps.removeAll()
         totalUpdateCount = 0

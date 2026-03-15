@@ -5,40 +5,11 @@
 //  Created by Claude on 12/23/25.
 //
 
-import ActivityKit
 import AppIntents
 import Foundation
 import os
 
 private let logger = Logger(subsystem: "com.danielbutler.OneEighty", category: "Intents")
-
-@MainActor
-final class IntentUpdateTracker {
-    static let shared = IntentUpdateTracker()
-
-    let tracker = ActivityUpdateTracker()
-
-    private init() {}
-
-    func recordIntentUpdate(intent: String, bpm: Int, isPlaying: Bool) {
-        tracker.recordUpdate()
-        logger.info("\(intent) pushed update — bpm=\(bpm), isPlaying=\(isPlaying), hourly=\(self.tracker.updatesInLastHour())")
-    }
-
-    func reset() {
-        tracker.reset()
-    }
-}
-
-/// Update the Live Activity directly from the widget extension process.
-/// This is the only reliable way to update the UI when the app is backgrounded.
-private func pushActivityUpdate(bpm: Int, isPlaying: Bool, intent: String) async {
-    let state = OneEightyActivityAttributes.ContentState(bpm: bpm, isPlaying: isPlaying)
-    for activity in Activity<OneEightyActivityAttributes>.activities {
-        await activity.update(.init(state: state, staleDate: nil))
-    }
-    await IntentUpdateTracker.shared.recordIntentUpdate(intent: intent, bpm: bpm, isPlaying: isPlaying)
-}
 
 struct ToggleOneEightyIntent: AppIntent {
     static var title: LocalizedStringResource = "Toggle OneEighty"
@@ -53,7 +24,7 @@ struct ToggleOneEightyIntent: AppIntent {
 
         store.isPlaying = nowPlaying
         let bpm = store.bpm
-        await pushActivityUpdate(bpm: bpm, isPlaying: nowPlaying, intent: "ToggleOneEighty")
+        IntentActivityDebouncer.shared.submit(bpm: bpm, isPlaying: nowPlaying, priority: .critical)
 
         store.postCommand(nowPlaying ? .start : .stop)
         return .result()
@@ -70,7 +41,7 @@ struct StartOneEightyIntent: AppIntent {
         let store = SharedStateStore.shared
         store.isPlaying = true
         let bpm = store.bpm
-        await pushActivityUpdate(bpm: bpm, isPlaying: true, intent: "StartOneEighty")
+        IntentActivityDebouncer.shared.submit(bpm: bpm, isPlaying: true, priority: .critical)
         store.postCommand(.start)
         return .result()
     }
@@ -86,7 +57,7 @@ struct StopOneEightyIntent: AppIntent {
         let store = SharedStateStore.shared
         store.isPlaying = false
         let bpm = store.bpm
-        await pushActivityUpdate(bpm: bpm, isPlaying: false, intent: "StopOneEighty")
+        IntentActivityDebouncer.shared.submit(bpm: bpm, isPlaying: false, priority: .critical)
         store.postCommand(.stop)
         return .result()
     }
@@ -105,7 +76,7 @@ struct IncrementBPMIntent: AppIntent {
             let newBPM = currentBPM + 1
             store.bpm = newBPM
             let isPlaying = store.isPlaying
-            await pushActivityUpdate(bpm: newBPM, isPlaying: isPlaying, intent: "IncrementBPM")
+            IntentActivityDebouncer.shared.submit(bpm: newBPM, isPlaying: isPlaying, priority: .normal)
         }
         return .result()
     }
@@ -124,7 +95,7 @@ struct DecrementBPMIntent: AppIntent {
             let newBPM = currentBPM - 1
             store.bpm = newBPM
             let isPlaying = store.isPlaying
-            await pushActivityUpdate(bpm: newBPM, isPlaying: isPlaying, intent: "DecrementBPM")
+            IntentActivityDebouncer.shared.submit(bpm: newBPM, isPlaying: isPlaying, priority: .normal)
         }
         return .result()
     }

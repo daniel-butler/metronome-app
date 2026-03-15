@@ -235,4 +235,64 @@ final class ActivityUpdateTrackerTests: XCTestCase {
             XCTAssertFalse(tracker.hasPendingUpdate)
         }
     }
+
+    // MARK: - Budget-Aware Effective Interval
+
+    nonisolated func testEffectiveIntervalNormalUnderBudget() async {
+        await MainActor.run {
+            let tracker = ActivityUpdateTracker(minimumInterval: 0.3, budgetWarningThreshold: 40)
+            XCTAssertEqual(tracker.effectiveInterval(), 0.3,
+                           "Under budget should use normal interval")
+        }
+    }
+
+    nonisolated func testEffectiveIntervalDoublesAt75Percent() async {
+        await MainActor.run {
+            let tracker = ActivityUpdateTracker(minimumInterval: 0.3, budgetWarningThreshold: 40)
+            let now = Date()
+
+            // 30 updates = 75% of budget
+            for i in 0..<30 {
+                tracker.recordUpdate(at: now.addingTimeInterval(Double(i)))
+            }
+
+            XCTAssertEqual(tracker.effectiveInterval(at: now.addingTimeInterval(30)), 0.6,
+                           "At 75% budget, interval should double")
+        }
+    }
+
+    nonisolated func testEffectiveIntervalQuadruplesAtBudgetLimit() async {
+        await MainActor.run {
+            let tracker = ActivityUpdateTracker(minimumInterval: 0.3, budgetWarningThreshold: 40)
+            let now = Date()
+
+            // 40 updates = 100% of budget
+            for i in 0..<40 {
+                tracker.recordUpdate(at: now.addingTimeInterval(Double(i)))
+            }
+
+            XCTAssertEqual(tracker.effectiveInterval(at: now.addingTimeInterval(40)), 1.2,
+                           "At budget limit, interval should quadruple")
+        }
+    }
+
+    nonisolated func testEffectiveIntervalRecoversAfterTimePasses() async {
+        await MainActor.run {
+            let tracker = ActivityUpdateTracker(minimumInterval: 0.3, budgetWarningThreshold: 40)
+            let now = Date()
+
+            // Fill up budget
+            for i in 0..<40 {
+                tracker.recordUpdate(at: now.addingTimeInterval(Double(i)))
+            }
+            XCTAssertEqual(tracker.effectiveInterval(at: now.addingTimeInterval(40)), 1.2)
+
+            // After all entries are older than 1 hour, interval returns to normal
+            // Last entry was at now+39, so now+3640 puts all entries >1hr old
+            let oneHourLater = now.addingTimeInterval(3640)
+            tracker.recordUpdate(at: oneHourLater) // triggers prune
+            XCTAssertEqual(tracker.effectiveInterval(at: oneHourLater), 0.3,
+                           "After old entries expire, interval should return to normal")
+        }
+    }
 }
