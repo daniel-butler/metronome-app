@@ -178,12 +178,16 @@ final class LiveActivityManager {
     func endActivity() {
         guard let activity = currentActivity else { return }
         logger.info("endActivity called — id=\(activity.id)")
+        // Clear synchronously BEFORE the async end to prevent race:
+        // startActivity() calls endActivity() then immediately creates a new activity.
+        // If we nil inside the Task, the async completion nils the NEW activity,
+        // orphaning it and causing duplicate live activities on the lock screen.
+        currentActivity = nil
         contentUpdateTask?.cancel()
         contentUpdateTask = nil
 
         Task {
             await activity.end(nil, dismissalPolicy: .immediate)
-            currentActivity = nil
             logger.info("Activity ended")
         }
     }
