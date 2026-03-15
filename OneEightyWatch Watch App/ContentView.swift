@@ -9,6 +9,8 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var session = WatchSessionManager()
+    @State private var crownBPM: Double = 180
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         VStack(spacing: 8) {
@@ -72,8 +74,41 @@ struct ContentView: View {
                     .padding(.top, 4)
             }
         }
+        .focusable()
+        .digitalCrownRotation(
+            $crownBPM,
+            from: Double(150),
+            through: Double(230),
+            by: 1,
+            sensitivity: .medium,
+            isContinuous: false,
+            isHapticFeedbackEnabled: true
+        )
+        .onChange(of: crownBPM) { _, newValue in
+            let target = Int(newValue)
+            let delta = target - session.bpm
+            if delta > 0 {
+                for _ in 0..<delta { session.incrementBPM() }
+            } else if delta < 0 {
+                for _ in 0..<(-delta) { session.decrementBPM() }
+            }
+        }
+        .onChange(of: session.bpm) { _, newBPM in
+            crownBPM = Double(newBPM)
+        }
         .onAppear {
             session.activate()
+            crownBPM = Double(session.bpm)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .active:
+                session.activate()
+            case .inactive, .background:
+                session.flushAndInvalidateTimers()
+            @unknown default:
+                break
+            }
         }
     }
 }

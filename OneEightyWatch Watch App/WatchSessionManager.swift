@@ -89,6 +89,22 @@ final class WatchSessionManager: NSObject {
         }
     }
 
+    /// Flush pending BPM delta and invalidate all timers.
+    /// Call when the app goes to background to avoid keeping the CPU awake.
+    func flushAndInvalidateTimers() {
+        // Send any pending batched delta before going to background
+        if pendingBPMDelta != 0 {
+            let delta = pendingBPMDelta
+            pendingBPMDelta = 0
+            batchTimer?.invalidate()
+            batchTimer = nil
+            sendCommand("adjustBPM", extra: ["count": delta])
+        }
+        cooldownTimer?.invalidate()
+        cooldownTimer = nil
+        isCoolingDown = false
+    }
+
     private func sendCommand(_ command: String, extra: [String: Any] = [:]) {
         guard let session = wcSession else {
             logger.warning("No WCSession — command \(command) dropped")
