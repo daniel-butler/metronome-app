@@ -103,9 +103,11 @@ final class OneEightyEngine {
         setupAudioEngine()
         setupRemoteCommands()
         startObservingInterruptions()
+        // Update stateSubject BEFORE subscriptions so the LiveActivityManager
+        // subscriber gets the correct restored BPM, not the hardcoded default (180).
+        notifyStateChanged()
         setupSubscriptions()
         startObservingSharedState()
-        notifyStateChanged()
         isSetUp = true
     }
 
@@ -119,9 +121,9 @@ final class OneEightyEngine {
         setupAudioEngine()
         setupRemoteCommands()
         startObservingInterruptions()
+        notifyStateChanged()
         setupSubscriptions()
         startObservingSharedState()
-        notifyStateChanged()
         isSetUp = true
     }
 

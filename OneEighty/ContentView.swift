@@ -108,11 +108,6 @@ struct ContentView: View {
         .onAppear {
             logger.info("onAppear — setting up engine")
             engine.setup()
-
-            Task { @MainActor in
-                LiveActivityManager.shared.cleanupStaleActivities()
-                LiveActivityManager.shared.startActivity(bpm: engine.bpm, isPlaying: false)
-            }
         }
         .onDisappear {
             logger.info("onDisappear — tearing down engine")
